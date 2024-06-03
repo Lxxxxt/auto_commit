@@ -133,15 +133,13 @@ func getKimiKey() string {
 
 // 执行git diff ':!kitex_gen' 命令并保存输出
 func gitDiff() string {
-	cmd := exec.Command("git", "diff", "--exclude=kitex_gen")
-	var gitDiffOut bytes.Buffer
-	cmd.Stdout = &gitDiffOut
-	err := cmd.Run()
+	cmd := exec.Command("git", "diff", "--", ":(exclude)kitex_gen/*", ":(exclude)go.sum")
+	gitDiffOut, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(fmt.Sprintf("git diff 失败:%s", err.Error()))
 
 	}
-	gitDiffOutput := gitDiffOut.String()
+	gitDiffOutput := string(gitDiffOut)
 	if len(gitDiffOutput) > 10000 {
 		log.Fatal("git diff 输出过长")
 	}
