@@ -1,11 +1,11 @@
 package main
 
 import (
-	"autoc/log"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -28,6 +28,7 @@ var cmd = struct {
 }{}
 
 func init() {
+
 	cmd.customMessage = pflag.StringP("message", "m", "", "commit message")
 	cmd.whetherPush = pflag.BoolP("push", "p", false, "push to remote")
 	cmd.setKey = pflag.StringP("set-key", "k", "", "set kimi key")

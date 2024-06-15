@@ -1,6 +1,6 @@
-module autoc
+module github.com/Lxxxxt/auto_commit
 
-go 1.22.2
+go 1.18
 
 require (
 	github.com/spf13/pflag v1.0.5
