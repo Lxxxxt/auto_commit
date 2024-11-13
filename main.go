@@ -1,25 +1,26 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 
-	"net/http"
 	"os/exec"
 
 	"github.com/spf13/pflag"
 	"github.com/tidwall/gjson"
+	"github.com/volcengine/volcengine-go-sdk/service/arkruntime"
+	"github.com/volcengine/volcengine-go-sdk/service/arkruntime/model"
+	"github.com/volcengine/volcengine-go-sdk/volcengine"
 )
 
 const systemRolePrompt = "你是一名资深的golang开发者和代码审核员,目前主要做的业务是小程序开放平台的研发,你有着对自己的git commit记录的简洁性和准确性有着近乎疯狂的追求.你会根据用户发送的git diff内容,为用户生成一段简洁的,准确的,概括性的,不超过20个中文文字的commit message,帮助用户在提交commit时归档改动内容.你的回答需要满足特定格式,格式为{\"response\":\"<你的答案>\"}."
 const userRolePrompt = "我的git diff的内容:{%s}, 请你帮我生成commit message"
 
-var kimiKey string
+var modelKey string = "ep-20240707145511-q7dqb"
+var ARK_API_KEY string = "45ada766-15e3-4e36-8608-1449dc7b999d"
 
 var cmd = struct {
 	customMessage *string
@@ -31,18 +32,18 @@ func init() {
 
 	cmd.customMessage = pflag.StringP("message", "m", "", "commit message")
 	cmd.whetherPush = pflag.BoolP("push", "p", false, "push to remote")
-	cmd.setKey = pflag.StringP("set-key", "k", "", "set kimi key")
+	cmd.setKey = pflag.StringP("set-key", "k", "", "set ai key")
 	pflag.Parse()
 }
 
 func main() {
 	if cmd.setKey != nil && *cmd.setKey != "" {
-		setKimiKey(*cmd.setKey)
+		setAiKey(*cmd.setKey)
 		return
 	}
-	kimiKey = getKimiKey()
-	if kimiKey == "" {
-		log.Fatal("未配置kimi key")
+	ARK_API_KEY = getAiKey()
+	if ARK_API_KEY == "" {
+		log.Fatal("未配置ai key")
 	}
 	var commitMessage string
 	if cmd.customMessage != nil && *cmd.customMessage != "" {
@@ -56,7 +57,7 @@ func main() {
 	}
 
 }
-func setKimiKey(key string) {
+func setAiKey(key string) {
 	fullPath := getConfigPath()
 	// 文件存在，打开文件进行后续操作
 	file, err := os.OpenFile(fullPath, os.O_RDWR, 0644)
@@ -77,12 +78,12 @@ func setKimiKey(key string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("kimi key 已设置")
+	fmt.Println("ai key 已设置")
 
 }
 func getConfigPath() (fullPath string) {
 	// 定义文件路径
-	path := filepath.Join(".autoc", "config.json")
+	path := filepath.Join(".autoc", "autoc_config.json")
 
 	// 获取当前用户的主目录路径
 	homeDir, err := os.UserHomeDir()
@@ -114,7 +115,7 @@ func getConfigPath() (fullPath string) {
 	return
 }
 
-func getKimiKey() string {
+func getAiKey() string {
 	fullPath := getConfigPath()
 	// 文件存在，打开文件进行后续操作
 	file, err := os.OpenFile(fullPath, os.O_RDWR, 0644)
@@ -137,7 +138,7 @@ func gitDiff() string {
 	cmd := exec.Command("git", "diff", "--", ":(exclude)kitex_gen/*", ":(exclude)go.sum")
 	gitDiffOut, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(fmt.Sprintf("git diff 失败:%s", err.Error()))
+		log.Fatalf("git diff 失败:%s", err.Error())
 
 	}
 	gitDiffOutput := string(gitDiffOut)
@@ -154,13 +155,13 @@ func gitCommit(commitMessage string) {
 	// 执行git add
 	err := addCmd.Run()
 	if err != nil {
-		log.Fatal(fmt.Sprintf("git add 失败:%s", err.Error()))
+		log.Fatalf("git add 失败:%s", err.Error())
 	}
 	commitCmd := exec.Command("git", "commit", "-a", "-m", commitMessage)
 	// 执行git commit
 	err = commitCmd.Run()
 	if err != nil {
-		log.Fatal(fmt.Sprintf("git commit 失败:%s", err.Error()))
+		log.Fatalf("git commit 失败:%s", err.Error())
 	}
 }
 func gitPush() {
@@ -168,78 +169,60 @@ func gitPush() {
 	pushCmd := exec.Command("git", "push")
 	err := pushCmd.Run()
 	if err != nil {
-		log.Fatal(fmt.Sprintf("git push 失败:%s", err.Error()))
+		log.Fatalf("git push 失败:%s", err.Error())
 	}
 }
-func getAiResponse(gitDiff string) string {
-	reqBody := map[string]interface{}{}
-	reqBody["model"] = "moonshot-v1-8k"
-	reqBody["messages"] = []map[string]string{
-		{
-			"role":    "system",
-			"content": systemRolePrompt,
+func getAiResponseDoubao(ctx context.Context, gitDiff string) (string, error) {
+	client := arkruntime.NewClientWithApiKey(ARK_API_KEY,
+		arkruntime.WithBaseUrl("https://ark.cn-beijing.volces.com/api/v3"),
+	)
+	req := model.ChatCompletionRequest{
+		Model: modelKey,
+		Messages: []*model.ChatCompletionMessage{
+			{
+				Role: model.ChatMessageRoleSystem,
+				Content: &model.ChatCompletionMessageContent{
+					StringValue: volcengine.String(systemRolePrompt),
+				},
+			},
+			{
+				Role: model.ChatMessageRoleUser,
+				Content: &model.ChatCompletionMessageContent{
+					StringValue: volcengine.String(fmt.Sprintf(userRolePrompt, gitDiff)),
+				},
+			},
 		},
-		{
-			"role":    "user",
-			"content": fmt.Sprintf(userRolePrompt, gitDiff),
-		},
 	}
-	reqBody["temperature"] = 0.3
 
-	jsonData, err := json.Marshal(reqBody)
+	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("json marshal 失败:%s", err.Error()))
+		return "", fmt.Errorf("standard chat error: %v", err)
 	}
-	// 创建请求体的字节缓冲区
-	requestBodyBuffer := bytes.NewBuffer(jsonData)
-
-	// 构建HTTP请求
-	req, err := http.NewRequest(http.MethodPost, "https://api.moonshot.cn/v1/chat/completions", requestBodyBuffer)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("创建请求体失败:%s", err.Error()))
-
+	resStrPtr := resp.Choices[0].Message.Content.StringValue
+	if resStrPtr == nil {
+		return "", fmt.Errorf("standard chat error: %v", err)
 	}
-	// 设置请求头
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", kimiKey))
-
-	// 发送HTTP请求
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("发送请求失败:%s", err.Error()))
-	}
-	defer resp.Body.Close()
-
-	// 读取响应数据
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("读取响应数据失败:%s", err.Error()))
-	}
-	// 打印响应数据
-	return string(respBody)
-
+	return *resp.Choices[0].Message.Content.StringValue, nil
 }
+
 func getCommitMessage() string {
 	gitDiff := gitDiff()
 	if gitDiff == "" {
 		return "init commit"
 	}
-	response := getAiResponse(gitDiff)
-	commitMessage := extractCommitMessage(response)
-	return commitMessage
+	aiResp, err := getAiResponseDoubao(context.Background(), gitDiff)
+	if err != nil {
+		log.Fatalf("获取commit message失败:%s", err.Error())
+	}
+	return extractCommitMessage(aiResp)
 
 }
 
 // extractCommitMessage 从Kimi的回答中提取commit message
 func extractCommitMessage(response string) string {
-	content := gjson.Get(response, "choices.0.message.content")
-	if content.String() == "" {
-		log.Fatal(fmt.Sprintf("提取kimi resp失败:%s", response))
-	}
-	commitMessage := gjson.Get(content.String(), "response")
+	commitMessage := gjson.Get(response, "response")
 	if commitMessage.String() == "" {
-		log.Fatal(fmt.Sprintf("提取commit message失败:%s", content.String()))
+		log.Fatalf("提取commit message失败:%s", response)
 	}
 	return commitMessage.String()
 
