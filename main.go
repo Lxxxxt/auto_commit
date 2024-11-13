@@ -32,18 +32,18 @@ func init() {
 
 	cmd.customMessage = pflag.StringP("message", "m", "", "commit message")
 	cmd.whetherPush = pflag.BoolP("push", "p", false, "push to remote")
-	cmd.setKey = pflag.StringP("set-key", "k", "", "set ai key")
+	cmd.setKey = pflag.StringP("set-key", "k", "", "set api key")
 	pflag.Parse()
 }
 
 func main() {
 	if cmd.setKey != nil && *cmd.setKey != "" {
-		setAiKey(*cmd.setKey)
+		setApiKey(*cmd.setKey)
 		return
 	}
-	ARK_API_KEY = getAiKey()
+	ARK_API_KEY = getApiKey()
 	if ARK_API_KEY == "" {
-		log.Fatal("未配置ai key")
+		log.Fatal("未配置api key")
 	}
 	var commitMessage string
 	if cmd.customMessage != nil && *cmd.customMessage != "" {
@@ -57,7 +57,7 @@ func main() {
 	}
 
 }
-func setAiKey(key string) {
+func setApiKey(key string) {
 	fullPath := getConfigPath()
 	// 文件存在，打开文件进行后续操作
 	file, err := os.OpenFile(fullPath, os.O_RDWR, 0644)
@@ -78,7 +78,7 @@ func setAiKey(key string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("ai key 已设置")
+	fmt.Println("api key 已设置")
 
 }
 func getConfigPath() (fullPath string) {
@@ -115,7 +115,7 @@ func getConfigPath() (fullPath string) {
 	return
 }
 
-func getAiKey() string {
+func getApiKey() string {
 	fullPath := getConfigPath()
 	// 文件存在，打开文件进行后续操作
 	file, err := os.OpenFile(fullPath, os.O_RDWR, 0644)
