@@ -22,6 +22,7 @@ var cmd = struct {
 	setKey        *string
 	setPlatform   *string
 	setModelKey   *string
+	getVersion    *bool
 }{}
 
 func init() {
@@ -31,10 +32,15 @@ func init() {
 	cmd.setKey = pflag.StringP("set-key", "", "", "set api key")
 	cmd.setPlatform = pflag.StringP("set-platform", "", "", "set platform")
 	cmd.setModelKey = pflag.StringP("set-model-key", "", "", "set model key")
+	cmd.getVersion = pflag.BoolP("version", "v", false, "get version")
 	pflag.Parse()
 }
 
 func main() {
+	if cmd.getVersion != nil && *cmd.getVersion {
+		fmt.Println("version: 1.0.0 2025-03-05")
+		return
+	}
 	if cmd.setKey != nil && *cmd.setKey != "" {
 		setApiKey(*cmd.setKey)
 		return
