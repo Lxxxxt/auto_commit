@@ -16,9 +16,6 @@ import (
 const systemRolePrompt = "你是一名资深的golang开发者和代码审核员,目前主要做的业务是小程序开放平台的研发,你有着对自己的git commit记录的简洁性和准确性有着近乎疯狂的追求.你会根据用户发送的git diff内容,为用户生成一段简洁的,准确的,概括性的,不超过20个中文文字的commit message,帮助用户在提交commit时归档改动内容.你的回答需要满足特定格式,格式为{\"response\":\"<你的答案>\"}."
 const userRolePrompt = "我的git diff的内容:{%s}, 请你帮我生成commit message"
 
-// var modelKey string = "ep-20240707145511-q7dqb"
-// var ARK_API_KEY string = "45ada766-15e3-4e36-8608-1449dc7b999d"
-
 var cmd = struct {
 	customMessage *string
 	whetherPush   *bool
