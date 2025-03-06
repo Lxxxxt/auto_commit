@@ -21,7 +21,7 @@ const systemRolePrompt = "你是一名资深的golang开发者和代码审核员
 const userRolePrompt = "我的git diff的内容:{%s}, 请你帮我生成commit message"
 
 var modelKey string = "ep-20240707145511-q7dqb"
-var ARK_API_KEY string = "45ada766-15e3-4e36-8608-1449dc7b999d"
+var ARK_API_KEY string 
 
 var cmd = struct {
 	customMessage *string
@@ -188,6 +188,7 @@ func gitPush() {
 		}
 	}
 }
+
 func getAiResponseDoubao(ctx context.Context, gitDiff string) (string, error) {
 	client := arkruntime.NewClientWithApiKey(ARK_API_KEY,
 		arkruntime.WithBaseUrl("https://ark.cn-beijing.volces.com/api/v3"),
