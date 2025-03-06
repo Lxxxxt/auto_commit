@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"os/exec"
 
@@ -165,11 +166,26 @@ func gitCommit(commitMessage string) {
 	}
 }
 func gitPush() {
-	// git push (如果需要的话)
-	pushCmd := exec.Command("git", "push")
-	err := pushCmd.Run()
+	// 检查远端是否存在这个分支 git branch -r |grep $(git_current_branch)
+	branchCmd := exec.Command("git", "branch", "--remote", "|", "grep", "$(git_current_branch)")
+	branchOut, err := branchCmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("git push 失败:%s", err.Error())
+		log.Fatalf("git branch 失败:%s", err.Error())
+	}
+	branchOutStr := string(branchOut)
+	//，如果不存在执行 git push --set-upstream origin $(git_current_branch)
+	if strings.Contains(branchOutStr, "origin/master") {
+		pushCmd := exec.Command("git", "push")
+		err := pushCmd.Run()
+		if err != nil {
+			log.Fatalf("git push 失败:%s", err.Error())
+		}
+	} else {
+		pushCmd := exec.Command("git", "push", "--set-upstream", "origin", "master")
+		err := pushCmd.Run()
+		if err != nil {
+			log.Fatalf("git push 失败:%s", err.Error())
+		}
 	}
 }
 func getAiResponseDoubao(ctx context.Context, gitDiff string) (string, error) {
