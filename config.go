@@ -52,8 +52,8 @@ func getPlatform() string {
 
 func saveConfig(config Config) {
 	fullPath := getConfigPath()
-	// 文件存在，打开文件进行后续操作
-	file, err := os.OpenFile(fullPath, os.O_RDWR, 0644)
+	// 以覆盖模式打开文件
+	file, err := os.OpenFile(fullPath, os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
