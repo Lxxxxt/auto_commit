@@ -38,7 +38,7 @@ func init() {
 
 func main() {
 	if cmd.getVersion != nil && *cmd.getVersion {
-		fmt.Println("version: 1.0.0 2025-03-05")
+		fmt.Println("version: 1.0.2 2025-03-10")
 		return
 	}
 	if cmd.setKey != nil && *cmd.setKey != "" {
@@ -140,7 +140,7 @@ func getCommitMessage() string {
 	if gitDiff == "" {
 		return "init commit"
 	}
-	aiResp, err := ai_models.GetAiModel(getModelKey(), getApiKey(), getPlatform()).GetAiResponse(context.Background(), systemRolePrompt, userRolePrompt)
+	aiResp, err := ai_models.GetAiModel(getModelKey(), getApiKey(), getPlatform()).GetAiResponse(context.Background(), systemRolePrompt, fmt.Sprintf(userRolePrompt, gitDiff))
 	if err != nil {
 		log.Fatalf("获取commit message失败:%s", err.Error())
 	}
