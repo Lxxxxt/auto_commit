@@ -43,10 +43,16 @@ func getApiKey() string {
 }
 func getModelKey() string {
 	config := getConfig()
+	if config.ModelKey == "" {
+		config.ModelKey = "moonshot-v1-8k"
+	}
 	return config.ModelKey
 }
 func getPlatform() string {
 	config := getConfig()
+	if config.Platform == "" {
+		config.Platform = "kimi"
+	}
 	return config.Platform
 }
 
