@@ -115,14 +115,14 @@ func gitPush() {
 	currentBranch := exec.Command("git", "branch", "--show-current")
 	currentBranchOut, err := currentBranch.CombinedOutput()
 	if err != nil {
-		log.Fatalf("git branch 失败:%s", err.Error())
+		log.Fatalf("git branch --show-current 失败:%s", err.Error())
 	}
 	currentBranchStr := string(currentBranchOut)
 	// 检查远端是否存在这个分支 git branch -r |grep $(git_current_branch)
 	branchCmd := exec.Command("sh", "-c", "git branch --remote | grep "+currentBranchStr)
 	branchOut, err := branchCmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("git branch 失败:%s", err.Error())
+		log.Fatalf("git branch --remote 失败:%s", err.Error())
 	}
 	branchOutStr := string(branchOut)
 	//，如果不存在执行 git push --set-upstream origin $(git_current_branch)
@@ -133,10 +133,11 @@ func gitPush() {
 			log.Fatalf("git push 失败:%s", err.Error())
 		}
 	} else {
+		//git push --set-upstream origin feature/remove_black_rock_param
 		pushCmd := exec.Command("git", "push", "--set-upstream", "origin", currentBranchStr)
 		err := pushCmd.Run()
 		if err != nil {
-			log.Fatalf("git push 失败:%s", err.Error())
+			log.Fatalf("git push --set-upstream origin %s 失败:%s", currentBranchStr, err.Error())
 		}
 	}
 }
